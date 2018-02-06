@@ -1,0 +1,66 @@
+version: '2'
+services:
+  mail:
+    container_name: blezat_mail
+    image: namshi/smtp
+  app:
+    build: .
+    command: ./script/start
+    working_dir: /var/www/blezat
+    depends_on:
+      - db
+    volumes:
+      - ./blezat:/var/www/blezat:Z
+      - ./mount/log:/var/www/blezat/log:Z
+      - ./mount/public:/var/www/blezat/public:Z
+      - ./mount/tmp:/var/www/blezat/tmp:Z
+      - ./init.sh:/var/www/findkemist/init.sh:Z
+      - ./mount/bundle:/usr/local/bundle:Z
+    expose:
+      - "3000"
+    container_name: blezat
+    links:
+      - db
+    env_file:
+      - rails_variables.env
+
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile-nginx
+    links:
+      - app
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:Z
+      - ./nginx/log:/var/log/nginx:Z
+    container_name: blezat_nginx
+    ports:
+      - '80:80'
+  db:
+    build: ./mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - ./database_initial:/docker-entrypoint-initdb.d:Z
+      - /home/pandre/Working/Docker/mariadb-blezat:/var/lib/mysql:Z
+      - ./mysql/rebuild.sh:/var/dbs/rebuild.sh:Z
+      - ./dumps/:/var/dbs/data:Z
+    ports:
+      - 3306:3306
+    container_name: blezat_mysql
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: blezat_phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+      - PMA_HOST=db
+    restart: always
+    ports:
+      - 8080:80
+    volumes:
+      - /sessions
+    links:
+      - db
