@@ -4,6 +4,8 @@ services:
     container_name: blezat_mail
     image: namshi/smtp
   app:
+    tty: true
+    stdin_open: true
     build: .
     command: ./script/start
     working_dir: /var/www/blezat
@@ -16,6 +18,7 @@ services:
       - ./mount/tmp:/var/www/blezat/tmp:Z
       - ./init.sh:/var/www/findkemist/init.sh:Z
       - ./mount/bundle:/usr/local/bundle:Z
+      - ./script/start:/var/www/blezat/script/start:Z
     expose:
       - "3000"
     container_name: blezat
